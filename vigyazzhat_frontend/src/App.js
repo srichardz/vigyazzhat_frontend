@@ -16,6 +16,10 @@ function App() {
   // Új állapot a "készen állok" funkcióhoz
   const [readyPlayers, setReadyPlayers] = useState([]);
 
+  //szám elküldéshez szükséges állapotok
+  const numbers = [23, 45, 67, 12, 89, 3, 56, 77, 102, 14];
+  const [responseNumber, setResponseNumber] = useState(null);
+
   // Asztal létrehozása
   const handleCreateTable = async (event) => {
     event.preventDefault();
@@ -35,7 +39,6 @@ function App() {
       if (response.ok) {
         const result = await response.json();
         setTableId(result.table_id);  // Sikeres válasz: table_id mentése
-        alert("Sikeres asztal létrehozás!");
       } else {
         alert("Hiba történt az asztal létrehozása során!");
       }
@@ -64,7 +67,6 @@ function App() {
       if (response.ok) {
         const result = await response.json();
         setJoinedNames(result.names);  // Sikeres válasz: csatlakozott nevek listája
-        alert("Sikeres csatlakozás az asztalhoz!");
       } else {
         alert("Hiba történt a csatlakozás során!");
       }
@@ -88,9 +90,30 @@ function App() {
       if (response.ok) {
         const result = await response.json();
         setReadyPlayers(result.ready_players);  // Frissítjük a készen álló játékosok listáját
-        alert("Sikeresen jelentkeztél készen állónak!");
       } else {
         alert("Hiba történt a jelentkezés során!");
+      }
+    } catch (error) {
+      console.error("Hiba a küldés során:", error);
+    }
+  };
+
+   // A szám küldése a szervernek
+   const handleClick = async (number) => {
+    try {
+      const response = await fetch("/dummy_send_number", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ number: number }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setResponseNumber(result.number_received); // Frissítjük a választott számot
+      } else {
+        alert("Hiba történt a szám küldésekor!");
       }
     } catch (error) {
       console.error("Hiba a küldés során:", error);
@@ -126,7 +149,7 @@ function App() {
       
       {/* Létrehozott table_id megjelenítése */}
       {tableId && <p>Létrehozott asztal ID: {tableId}</p>}
-
+      <p>----------------------------------------------------------------------------------</p>
       {/* Csatlakozás asztalhoz */}
       <h2>Csatlakozás Az Asztalhoz</h2>
       <form onSubmit={handleJoinTable}>
@@ -164,14 +187,12 @@ function App() {
       {joinedNames.length > 0 && (
         <div>
           <h3>Csatlakozott Játékosok:</h3>
-          <ul>
             {joinedNames.map((name, index) => (
-              <li key={index}>{name}</li>
+              <p key={index}>{name}</p>
             ))}
-          </ul>
         </div>
       )}
-
+      <p>----------------------------------------------------------------------------------</p>
       {/* Új gomb a készen állok funkcióhoz */} 
       <button onClick={handleReady}>Készen állok</button>
 
@@ -179,14 +200,36 @@ function App() {
       {readyPlayers.length > 0 && (
         <div>
           <h3>Készen álló játékosok:</h3>
-          <ul>
             {readyPlayers.map((name, index) => (
-              <li key={index}>{name}</li>
+              <p key={index}>{name}</p>
             ))}
-          </ul>
         </div>
       )}
+      <p>----------------------------------------------------------------------------------</p>
+
+      <h2>Kattints egy számra!</h2>
+      <div className="number-container">
+        {numbers.map((number) => (
+          <button
+            key={number}
+            onClick={() => handleClick(number)}
+            className="number-box"
+          >
+            {number}
+          </button>
+        ))}
+      </div>
+
+      {responseNumber && (
+        <div>
+          <h3>A kiválasztott kártya:</h3>
+          <p>{responseNumber}</p>
+        </div>
+      )}
+      <p>----------------------------------------------------------------------------------</p>
+
       
+
     </div>
   );
 }
