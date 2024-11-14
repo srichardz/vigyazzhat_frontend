@@ -1,49 +1,113 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import PreMenu from "./pages/pre_menu";
+import Menu from "./pages/menu";
+import JoinTable from "./pages/join_table";
+import CreateTable from "./pages/create_table";
+import Lobby from "./pages/lobby";
 import './App.css';
 
 function App() {
+  const [_playerName, _setPlayerName] = useState("");
+  const [frState, setFrState] = useState("login");
+  const [inviteLink, setInviteLink] = useState("");
+  const [_password, _setPassword] = useState("");
   // Asztal létrehozásához szükséges állapotok
-  const [userName, setUserName] = useState("");
-  const [password, setPassword] = useState("");
   const [tableId, setTableId] = useState(null);
-
+  const [owner, setOwner] = useState(false);
   // Csatlakozáshoz szükséges állapotok
+  const [playerId, setPlayerId] = useState(null);
+  const [playerNames, setPlayerNames] = useState([]);
   const [playerName, setPlayerName] = useState("");
-  const [joinTableId, setJoinTableId] = useState("");
-  const [tablePasswd, setTablePasswd] = useState("");
-  const [joinedNames, setJoinedNames] = useState([]);
-
   // Új állapot a "készen állok" funkcióhoz
   const [readyPlayers, setReadyPlayers] = useState([]);
 
-  //szám elküldéshez szükséges állapotok
-  const numbers = [23, 45, 67, 12, 89, 3, 56, 77, 102, 14];
-  const [responseNumber, setResponseNumber] = useState(null);
+
+  const joinGame = (event) => {
+    event.preventDefault()
+    if (_playerName !== "") {
+      setFrState("menu")
+    } else {
+      alert("Hülyegyerek")
+    }
+  }
+
+  const createTable = (event) => {
+    event.preventDefault()
+    setFrState("create_table")
+  }
+
+  const joinTable = (event) => {
+    event.preventDefault()
+    setFrState("join_table")
+  }
+
+  useEffect(() => {
+      // Define the function you want to run every 500ms
+      const get_game_state = async () => {
+        if (tableId !== null) {
+          try {
+            const response = await fetch(`/get_game_state/${tableId}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              }
+            });
+      
+            if (response.ok) {
+              const result = await response.json();
+              console.log(result)
+              setPlayerNames(Object.keys(result.players))
+              // kezdjen fél secenkénti pingelésbe
+            } else {
+              alert("Cannot join table.");
+            }
+          } catch (error) {
+            console.error("Error while fetching endpoint:", error);
+          }
+        }
+      }
+      // Set up the interval to call the pingServer function every 500ms
+      const interval = setInterval(get_game_state, 2000);
+
+      // Clean up the interval when the component unmounts
+      return () => {
+        clearInterval(interval);
+      };
+  }, [tableId]); // Empty dependency array ensures this runs once when the component mounts
 
   // Asztal létrehozása
   const handleCreateTable = async (event) => {
     event.preventDefault();
-
+    // Log data before sending it
+    console.log("Creating table with:", {
+      _playerName: _playerName,
+      _password: _password,
+    });
     try {
-      const response = await fetch("/dummy_create_table", {
+      const response = await fetch("/create_table", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_name: userName,
-          password: password,
+          _playerName: _playerName,
+          _password: _password,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        setTableId(result.table_id);  // Sikeres válasz: table_id mentése
+        setTableId(result.table_id);
+        setPlayerId(result.player_id);
+        setInviteLink(result.inviteLink);
+        setFrState("lobby")
+
+        // kezdjen fél secenkénti pingelésbe
       } else {
-        alert("Hiba történt az asztal létrehozása során!");
+        console.log("Table cannot be created.");
       }
     } catch (error) {
-      console.error("Hiba a küldés során:", error);
+      console.error("Error while fetching endpoint:", error);
     }
   };
 
@@ -52,38 +116,43 @@ function App() {
     event.preventDefault();
 
     try {
-      const response = await fetch("/dummy_join_game", {
+      const response = await fetch("/join_game", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playerName: playerName,
-          table_id: joinTableId,
-          table_passwd: tablePasswd,
+          _playerName: _playerName,
+          inviteLink: inviteLink,
+          _password: _password,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        setJoinedNames(result.names);  // Sikeres válasz: csatlakozott nevek listája
+        setPlayerId(result.player_id);
+        setTableId(result.table_id);
+        setFrState("lobby")
+        // kezdjen fél secenkénti pingelésbe
       } else {
-        alert("Hiba történt a csatlakozás során!");
+        alert("Cannot join table.");
       }
     } catch (error) {
-      console.error("Hiba a küldés során:", error);
+      console.error("Error while fetching endpoint:", error);
     }
   };
 
+  /*TODO: implement*/
   const handleReady = async () => {
     try {
-      const response = await fetch("/dummy_ready", {
+      const response = await fetch("/ready", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playerName: playerName,  // A már meglévő playerName változót használjuk
+          tableId: tableId,
+          playerId: playerName,  // A már meglévő playerName változót használjuk
         }),
       });
   
@@ -98,138 +167,47 @@ function App() {
     }
   };
 
-   // A szám küldése a szervernek
-   const handleClick = async (number) => {
+    /*TODO: implement*/
+  const handleStartGame = async () => {
     try {
-      const response = await fetch("/dummy_send_number", {
+      const response = await fetch("/start_game", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ number: number }),
+        body: JSON.stringify({
+          tableId: tableId,
+          playerId: playerId,
+        }),
       });
-
+    
       if (response.ok) {
         const result = await response.json();
-        setResponseNumber(result.number_received); // Frissítjük a választott számot
+
       } else {
-        alert("Hiba történt a szám küldésekor!");
+        alert("Hiba történt a jelentkezés során!");
       }
     } catch (error) {
       console.error("Hiba a küldés során:", error);
     }
   };
-
+  
 
   return (
     <div className="App">
-      {/* Asztal létrehozása */}
-      <h2>Asztal Létrehozása</h2>
-      <form onSubmit={handleCreateTable}>
-        <label>
-          Felhasználói név (user_name):
-          <input
-            type="text"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-          />
-        </label>
-        <br />
-        <label>
-          Jelszó:
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        <br />
-        <button type="submit">Asztal létrehozása</button>
-      </form>
-      
-      {/* Létrehozott table_id megjelenítése */}
-      {tableId && <p>Létrehozott asztal ID: {tableId}</p>}
-      <p>----------------------------------------------------------------------------------</p>
-      {/* Csatlakozás asztalhoz */}
-      <h2>Csatlakozás Az Asztalhoz</h2>
-      <form onSubmit={handleJoinTable}>
-        <label>
-          Játékosnév:
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-          />
-        </label>
-        <br />
-        <label>
-          Asztal ID:
-          <input
-            type="text"
-            value={joinTableId}
-            onChange={(e) => setJoinTableId(e.target.value)}
-          />
-        </label>
-        <br />
-        <label>
-          Asztal Jelszó:
-          <input
-            type="password"
-            value={tablePasswd}
-            onChange={(e) => setTablePasswd(e.target.value)}
-          />
-        </label>
-        <br />
-        <button type="submit">Csatlakozás</button>
-      </form>
-      
-      {/* Csatlakozott játékosok listája */}
-      {joinedNames.length > 0 && (
-        <div>
-          <h3>Csatlakozott Játékosok:</h3>
-            {joinedNames.map((name, index) => (
-              <p key={index}>{name}</p>
-            ))}
-        </div>
+      {frState === "login" ? (
+        <PreMenu joinGame={joinGame} playerName={_playerName} setPlayerName={_setPlayerName} />
+      ) : frState === "menu" ? (
+        <Menu createTable={createTable} joinTable={joinTable} playerName={_playerName}/>
+      ) : frState === "create_table" ? (
+        <CreateTable playerName={_playerName} handleCreateTable={handleCreateTable} password={_password} setPassword={_setPassword} setOwner={setOwner} playerNames={playerNames}/>
+      ) : frState === "join_table" ? (
+        <JoinTable playerName={_playerName} handleJoinTable={handleJoinTable} setInviteLink={setInviteLink} password={_password} setPassword={_setPassword}/>
+      ) : frState === "lobby" ? (
+        <Lobby playerName={_playerName} players={[""]} inviteLink={inviteLink} playerNames={playerNames} handleStartGame={handleStartGame} owner={owner}/>
+      ) : (
+          alert("TODO: default case")
       )}
-      <p>----------------------------------------------------------------------------------</p>
-      {/* Új gomb a készen állok funkcióhoz */} 
-      <button onClick={handleReady}>Készen állok</button>
-
-      {/* Készen álló játékosok listájának megjelenítése */}
-      {readyPlayers.length > 0 && (
-        <div>
-          <h3>Készen álló játékosok:</h3>
-            {readyPlayers.map((name, index) => (
-              <p key={index}>{name}</p>
-            ))}
-        </div>
-      )}
-      <p>----------------------------------------------------------------------------------</p>
-
-      <h2>Kattints egy számra!</h2>
-      <div className="number-container">
-        {numbers.map((number) => (
-          <button
-            key={number}
-            onClick={() => handleClick(number)}
-            className="number-box"
-          >
-            {number}
-          </button>
-        ))}
-      </div>
-
-      {responseNumber && (
-        <div>
-          <h3>A kiválasztott kártya:</h3>
-          <p>{responseNumber}</p>
-        </div>
-      )}
-      <p>----------------------------------------------------------------------------------</p>
-
-      
-
     </div>
   );
 }
