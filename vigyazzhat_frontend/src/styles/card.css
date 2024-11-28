@@ -1,0 +1,103 @@
+.card {
+    position: relative;
+    height: 15vh;
+    width: 5vw;
+    background-image: url("../../public/card.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    margin: 5%;
+}
+
+.row_of_cards {
+    display: flex;
+    flex-direction: row;
+}
+
+.corner {
+    position: absolute;
+    font-size: 1.2vw;
+    font-weight: bold;
+    pointer-events: none;
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Vendor prefix for Safari/Chrome */
+    -moz-user-select: none;    /* Vendor prefix for Firefox */
+    -ms-user-select: none;     /* Vendor prefix for IE/Edge */
+}
+
+.topLeft {
+    top: -5%;
+    left: 15%;
+}
+
+.topRight {
+    top: -5%;
+    right: 15%;
+}
+
+.botLeft {
+    bottom: -5%;
+    left: 15%;
+    transform: rotate(180deg);
+}
+
+.botRight {
+    bottom: -5%;
+    right: 15%;
+    transform: rotate(180deg);
+}
+
+.art {
+    position: absolute;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    width: 70%;
+    height: 100%;
+    left: 15%;
+}
+
+.art_0 {
+    background-image: url("../../public/art_var0.png");
+}
+
+.art_1 {
+    background-image: url("../../public/art_var1.png");
+}
+
+.art_2 {
+    background-image: url("../../public/art_var2.png");
+}
+
+.art_3 {
+    background-image: url("../../public/art_var3.png");
+}
+
+.art_4 {
+    background-image: url("../../public/art_var4.png");
+}
+
+.hand_card {
+    position: relative;
+    bottom:0%;
+    cursor: pointer;
+}
+
+.hand_card:hover {
+    animation: hc_float .5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes hc_float {
+    from {bottom: 0%;}
+    to {bottom: 10%;}
+}
+
+.table_card {
+    animation: spawn_card .5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0%;
+}
+
+@keyframes spawn_card {
+    from {opacity: 0%;}
+    to {opacity: 100%;}
+}

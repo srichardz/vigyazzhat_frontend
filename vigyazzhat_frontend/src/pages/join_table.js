@@ -1,9 +1,10 @@
 // src/pages/join_table.js
 import React from "react";
+import '../styles/premenu.css';
 
 const JoinTable = (props) => {
-    return  <div id='join_table'>
-                <p>Player: {props.playerName}</p>
+    return  <div id='join_table' className="menu">
+                <p className="first">Player: {props.playerName}</p>
                 <form onSubmit={props.handleJoinTable}>
                     <label>Table invite link:</label>
                     <input
@@ -19,6 +20,7 @@ const JoinTable = (props) => {
                     />
                     <button type="submit">Join Table</button>
                 </form>
+                <span className={props.err === "200" ? "noerr" : "err"}>{props.err}</span>
             </div>
 };
 

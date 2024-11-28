@@ -1,25 +1,29 @@
 // src/pages/lobby.js
 import React from "react";
+import '../styles/premenu.css';
 
 const JoinTable = (props) => {
-    return props.owner ? <div id='lobby'>
-                            <p>Players ({props.playerNames.length}/6) Invite link: {props.inviteLink}</p>
+    let player_keys = Object.keys(props.playerNames)
+    return props.owner ? <div id='lobby' className="menu">
+                            <p className="first">Players ({player_keys.length}/6) Invite link: {props.inviteLink}</p>
                             <ul>
-                                {props.playerNames.map((player, index) => (
-                                    <li key={index}>{player}</li>
+                                {player_keys.map((player, index) => (
+                                    <li key={index} style={props.playerNames[player]?{color: "green"}:{color: "red"}}>{player}</li>
                                 ))}
                             </ul>
                             <button onClick={props.handleStartGame}>Start Game</button>
+                            <span className={props.err === "200" ? "noerr" : "err"}>{props.err}</span>
                          </div> 
                        : 
-                        <div id='lobby'>
-                            <p>Players ({props.playerNames.length}/6) Invite link: {props.inviteLink}</p>
+                        <div id='lobby' className="menu">
+                            <p className="first">Players ({player_keys.length}/6) Invite link: {props.inviteLink}</p>
                             <ul>
-                                {props.playerNames.map((player, index) => (
-                                    <li key={index}>{player}</li>
+                                {player_keys.map((player, index) => (
+                                    <li key={index} style={props.playerNames[player]?{color: "green"}:{color: "red"}}>{player}</li>
                                 ))}
                             </ul>
                             <button onClick={props.handleReady}>Ready</button>
+                            <span className={props.err === "200" ? "noerr" : "err"}>{props.err}</span>
                         </div> 
 };
 

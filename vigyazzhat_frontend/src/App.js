@@ -4,6 +4,8 @@ import Menu from "./pages/menu";
 import JoinTable from "./pages/join_table";
 import CreateTable from "./pages/create_table";
 import Lobby from "./pages/lobby";
+import Game from "./pages/game";
+import Leaderboard from "./pages/leaderboard";
 import './App.css';
 
 function App() {
@@ -17,17 +19,19 @@ function App() {
   // Csatlakozáshoz szükséges állapotok
   const [playerId, setPlayerId] = useState(null);
   const [playerNames, setPlayerNames] = useState([]);
-  const [playerName, setPlayerName] = useState("");
+  const [cardsInPlay, setCardsInPlay] = useState([]);
   // Új állapot a "készen állok" funkcióhoz
   const [readyPlayers, setReadyPlayers] = useState([]);
 
+  const [err, setErr] = useState("");
 
   const joinGame = (event) => {
     event.preventDefault()
     if (_playerName !== "") {
+      setErr("")
       setFrState("menu")
     } else {
-      alert("Hülyegyerek")
+      setErr("Please enter a valid name!")
     }
   }
 
@@ -55,34 +59,34 @@ function App() {
       
             if (response.ok) {
               const result = await response.json();
-              console.log(result)
-              setPlayerNames(Object.keys(result.players))
-              // kezdjen fél secenkénti pingelésbe
+              setPlayerNames(result.players)
+              if (result.status === "started") {
+                setFrState("game")
+              } else if (result.status === "ended") {
+                setFrState("ended")
+              }
+              setCardsInPlay(result.cards_in_play)
             } else {
-              alert("Cannot join table.");
+              console.error("Cannot reach that endpoint.")
+              setErr("Cannot reach that endpoint.")
             }
           } catch (error) {
-            console.error("Error while fetching endpoint:", error);
+            console.error("Cannot reach the server.");
+            setErr("Cannot reach the server.");
           }
         }
       }
       // Set up the interval to call the pingServer function every 500ms
-      const interval = setInterval(get_game_state, 2000);
+      const interval = setInterval(get_game_state, 500);
 
       // Clean up the interval when the component unmounts
       return () => {
         clearInterval(interval);
       };
-  }, [tableId]); // Empty dependency array ensures this runs once when the component mounts
+  }, [tableId]);
 
-  // Asztal létrehozása
   const handleCreateTable = async (event) => {
     event.preventDefault();
-    // Log data before sending it
-    console.log("Creating table with:", {
-      _playerName: _playerName,
-      _password: _password,
-    });
     try {
       const response = await fetch("/create_table", {
         method: "POST",
@@ -101,17 +105,16 @@ function App() {
         setPlayerId(result.player_id);
         setInviteLink(result.inviteLink);
         setFrState("lobby")
+        setErr("")
 
-        // kezdjen fél secenkénti pingelésbe
       } else {
-        console.log("Table cannot be created.");
+        setErr("Table cannot be created.");
       }
     } catch (error) {
-      console.error("Error while fetching endpoint:", error);
+      setErr("Error while trying to reach the servers. Please try again later!");
     }
   };
 
-  // Csatlakozás az asztalhoz
   const handleJoinTable = async (event) => {
     event.preventDefault();
 
@@ -133,16 +136,15 @@ function App() {
         setPlayerId(result.player_id);
         setTableId(result.table_id);
         setFrState("lobby")
-        // kezdjen fél secenkénti pingelésbe
+        setErr("")
       } else {
-        alert("Cannot join table.");
+        setErr("Bad link or password.");
       }
     } catch (error) {
-      console.error("Error while fetching endpoint:", error);
+      setErr("Error while trying to reach the server. Please try again later!");
     }
   };
 
-  /*TODO: implement*/
   const handleReady = async () => {
     try {
       const response = await fetch("/ready", {
@@ -152,22 +154,21 @@ function App() {
         },
         body: JSON.stringify({
           tableId: tableId,
-          playerId: playerName,  // A már meglévő playerName változót használjuk
+          playerId: playerId,
         }),
       });
   
       if (response.ok) {
         const result = await response.json();
-        setReadyPlayers(result.ready_players);  // Frissítjük a készen álló játékosok listáját
+        setReadyPlayers(result.ready_players);
       } else {
-        alert("Hiba történt a jelentkezés során!");
+        console.log("Couldn't reach endpoint.")
       }
     } catch (error) {
-      console.error("Hiba a küldés során:", error);
+      console.error("Couldn't reach server.");
     }
   };
 
-    /*TODO: implement*/
   const handleStartGame = async () => {
     try {
       const response = await fetch("/start_game", {
@@ -183,30 +184,33 @@ function App() {
     
       if (response.ok) {
         const result = await response.json();
-
+        setErr("")
       } else {
-        alert("Hiba történt a jelentkezés során!");
+        setErr("Game could not be started!")
       }
     } catch (error) {
-      console.error("Hiba a küldés során:", error);
+      setErr("Server cannot be reached, please try again later!");
     }
   };
-  
 
   return (
     <div className="App">
       {frState === "login" ? (
-        <PreMenu joinGame={joinGame} playerName={_playerName} setPlayerName={_setPlayerName} />
+        <PreMenu joinGame={joinGame} playerName={_playerName} setPlayerName={_setPlayerName} err={err}/>
       ) : frState === "menu" ? (
         <Menu createTable={createTable} joinTable={joinTable} playerName={_playerName}/>
       ) : frState === "create_table" ? (
-        <CreateTable playerName={_playerName} handleCreateTable={handleCreateTable} password={_password} setPassword={_setPassword} setOwner={setOwner} playerNames={playerNames}/>
+        <CreateTable playerName={_playerName} handleCreateTable={handleCreateTable} password={_password} setPassword={_setPassword} setOwner={setOwner} playerNames={playerNames} err={err}/>
       ) : frState === "join_table" ? (
-        <JoinTable playerName={_playerName} handleJoinTable={handleJoinTable} setInviteLink={setInviteLink} password={_password} setPassword={_setPassword}/>
+        <JoinTable playerName={_playerName} handleJoinTable={handleJoinTable} setInviteLink={setInviteLink} password={_password} setPassword={_setPassword} err={err}/>
       ) : frState === "lobby" ? (
-        <Lobby playerName={_playerName} players={[""]} inviteLink={inviteLink} playerNames={playerNames} handleStartGame={handleStartGame} owner={owner}/>
+        <Lobby inviteLink={inviteLink} playerNames={playerNames} handleStartGame={handleStartGame}  handleReady={handleReady} owner={owner}/>
+      ) : frState === "game" ? (
+        <Game playerNames={playerNames} tableId={tableId} playerId={playerId} cardsInPlay={cardsInPlay}/>
+      ) : frState === "ended" ? (
+        <Leaderboard lb={playerNames}/>
       ) : (
-          alert("TODO: default case")
+          setFrState("login") // default state
       )}
     </div>
   );

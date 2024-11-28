@@ -1,0 +1,27 @@
+ul {
+    text-align: left;
+}
+
+.player_tab {
+    position: absolute;
+    top:5vh;
+    right:8vw;
+}
+
+.def {
+    position: relative;
+    left: 0;
+    top: 0em;
+    opacity: 0%;
+    color: #ff0000;
+}
+
+.plus {
+    animation: increment 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) forwards;
+}
+
+@keyframes increment {
+    0% {top: .3em; opacity: 0%};
+    50% {top: 0em; opacity: 100%;};
+    100% {top: -.3em; opacity: 0%};
+}
